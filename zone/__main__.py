@@ -1,7 +1,9 @@
-from click import group, argument, option
 from time import sleep
+from click import group, argument, option
+from datetime import datetime
 
 from .OzonParser import OzonParser
+from .Tracker import Tracker
 
 
 @group()
@@ -12,21 +14,27 @@ def main():
 @main.command()
 @argument('product', type = str)
 def parse(product: str):
-    parser = OzonParser()
-    parser.push_price(product)
+    tracker = Tracker(products = [product])
+    parser = OzonParser(tracker = tracker)
 
-    print(f'The product costs {parser.prices[-1]}')
+    parser.push_prices(datetime.now(), check_targets = False)
+
+    print(f'The product costs {tuple(tracker.prices[product].values())[-1]}')
 
 
 @main.command()
-@argument('product', type = str)
+@argument('path', type = str, default = 'assets/products.txt')
 @option('--delay', '-d', type = float, help = 'interval between consequitive price checks in seconds', default = 3600)
-def start(product: str, delay: float):
-    parser = OzonParser()
+def start(path: str, delay: float):
+    tracker = Tracker(path)
+    parser = OzonParser(tracker = tracker)
 
     while True:
-        parser.push_price(product)
-        print(parser.prices)
+        timestamp = datetime.now()
+        parser.push_prices(timestamp)
+
+        tracker.save()
+
         sleep(delay)
 
 
