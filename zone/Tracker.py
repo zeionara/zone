@@ -18,12 +18,22 @@ class Tracker:
             self.products = products
             self.prices = {product: {} for product in self.products}
 
+    def ignore(self, product: str):
+        if product not in self.products:
+            raise ValueError(f'Not tracking product {product}')
+
+        self.products.remove(product)
+
+        self.save()
+
     def track(self, product: str):
         if product in self.products:
             raise ValueError(f'Already tracking product {product}')
 
         self.products.append(product)
         self.prices[product] = {}
+
+        self.save()
 
     def push(self, product: str, price: float, timestamp: datetime):
         self.prices[product][timestamp.strftime('%d-%m-%Y %H:%M:%S')] = price
