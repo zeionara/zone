@@ -1,6 +1,7 @@
+import os
 from datetime import datetime
 
-from pandas import DataFrame
+from pandas import DataFrame, read_csv
 
 
 class Tracker:
@@ -15,8 +16,7 @@ class Tracker:
             self.prices_path = None
 
             self.products = products
-
-        self.prices = {product: {} for product in self.products}
+            self.prices = {product: {} for product in self.products}
 
     def track(self, product: str):
         if product in self.products:
@@ -29,8 +29,25 @@ class Tracker:
         self.prices[product][timestamp.strftime('%d-%m-%Y %H:%M:%S')] = price
 
     def _load(self):
+
+        # Read products
+
         with open(self.products_path, 'r', encoding = 'utf-8') as file:
             self.products = [product[:-1] for product in file.readlines() if len(product) > 0]
+
+        # Read prices
+
+        if os.path.isfile(self.prices_path):
+            df = read_csv(self.prices_path, sep = '\t', index_col = 'date')
+            prices = df.to_dict()
+
+            for product in self.products:
+                if product not in prices:
+                    prices[product] = {}
+        else:
+            self.prices = {product: {} for product in self.products}
+
+        self.prices = prices
 
     def save(self):
         # Save products
@@ -59,4 +76,5 @@ class Tracker:
         df = df.drop('Column', axis=1)
 
         df_pivot = df.pivot(index='Row', columns='Col', values='Value')
+        df_pivot.rename_axis('date', inplace = True)
         df_pivot.to_csv(self.prices_path, sep='\t')

@@ -89,7 +89,7 @@ class Parser(ABC):
 
             prices = tuple(self.tracker.prices[product].values())
 
-            if len(prices) > 0 and price < prices[-1]:
+            if len(prices) > 0 and price <= prices[-1]:
                 app = ApplicationBuilder().token(self.token).build()
                 asyncio.run(app.bot.send_message(chat_id = self.chat, text = f'Hey! One of your products has just become cheaper. Now it costs `{int(price)}`:\n\n{url}', parse_mode = 'Markdown'))
 
