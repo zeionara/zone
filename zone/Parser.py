@@ -20,6 +20,7 @@ TIMEOUT = 3600
 
 BOT_TOKEN_ENV = 'ZONE_BOT_TOKEN'
 CHAT_ENV = 'MY_CHAT_ID'
+CHROME_DRIVER_PATH_ENV = 'CHROME_DRIVER_PATH'
 
 
 class Parser(ABC):
@@ -34,6 +35,7 @@ class Parser(ABC):
 
         self.token = token = env.get(BOT_TOKEN_ENV)
         self.chat = chat = env.get(CHAT_ENV)
+        self.chrome_driver_path = chrome_driver_path = env.get(CHROME_DRIVER_PATH_ENV)
 
         if token is None:
             raise ValueError(f'Environment variable {BOT_TOKEN_ENV} must be set')
@@ -41,10 +43,17 @@ class Parser(ABC):
         if chat is None:
             raise ValueError(f'Environment variable {CHAT_ENV} must be set')
 
+        if chrome_driver_path is None:
+            self.chrome_driver_path = ChromeDriverManager().install()
+
     def _refresh_cookies(self):
         options = ChromeOptions()
 
-        driver = Chrome(options, driver_executable_path = ChromeDriverManager().install())
+        # options.headless = True
+        # options.add_argument('--headless')
+
+        # driver = Chrome(options, driver_executable_path = self.chrome_driver_path, version_main = 119)
+        driver = Chrome(options, driver_executable_path = self.chrome_driver_path)
         driver.get(self.root)
 
         sleep(self.cookies_check_delay)
