@@ -6,7 +6,9 @@ from datetime import datetime
 
 from requests import get, Response
 from selenium.webdriver import ChromeOptions
-from undetected_chromedriver import Chrome
+from selenium_stealth import stealth
+from selenium import webdriver
+# from undetected_chromedriver import Chrome
 from webdriver_manager.chrome import ChromeDriverManager
 
 from telegram.ext import ApplicationBuilder
@@ -29,7 +31,7 @@ class Parser(ABC):
 
     requires_cookies = True
 
-    def __init__(self, tracker: Tracker, cookies: str = None, cookies_check_delay: float = 5):
+    def __init__(self, tracker: Tracker, cookies: str = None, cookies_check_delay: float = 500):
         self.tracker = tracker
 
         self.cookies = cookies
@@ -51,11 +53,27 @@ class Parser(ABC):
     def _refresh_cookies(self):
         options = ChromeOptions()
 
+        options.add_argument('start_maximized')
+
+        options.add_experimental_option('excludeSwitches', ['enable-automation'])
+        options.add_experimental_option('useAutomationExtension', False)
+
         # options.headless = True
         # options.add_argument('--headless')
 
         # driver = Chrome(options, driver_executable_path = self.chrome_driver_path, version_main = 119)
-        driver = Chrome(options, driver_executable_path = self.chrome_driver_path)
+
+        driver = webdriver.Chrome(options, webdriver.chrome.service.Service(executable_path = self.chrome_driver_path))
+        stealth(
+            driver,
+            languages = ['ru-RU', 'ru'],
+            vendor = 'Google Inc.',
+            platform = 'Linux x86_64',
+            webgl_vendor = 'Intel Inc.',
+            renderer = 'Intel Iris OpenGL Engine',
+            fix_hairline = True
+        )
+
         driver.get(self.root)
 
         sleep(self.cookies_check_delay)

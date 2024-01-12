@@ -21,5 +21,5 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python :: 3.11"
     ],
-    install_requires = ['click', 'requests', 'pandas', 'selenium', 'webdriver-manager', 'undetected-chromedriver', 'python-telegram-bot']
+    install_requires = ['click', 'requests', 'pandas', 'selenium', 'webdriver-manager', 'python-telegram-bot', 'selenium-stealth']
 )
