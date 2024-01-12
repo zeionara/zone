@@ -27,6 +27,8 @@ class Parser(ABC):
     root = None
     product_url = None
 
+    requires_cookies = True
+
     def __init__(self, tracker: Tracker, cookies: str = None, cookies_check_delay: float = 5):
         self.tracker = tracker
 
@@ -78,12 +80,12 @@ class Parser(ABC):
 
         # print(url)
 
-        response = get(url, headers = {'Cookie': self.cookies, 'User-Agent': USER_AGENT}, timeout = TIMEOUT)
+        response = get(self.make_request_url(url), headers = {'Cookie': self.cookies, 'User-Agent': USER_AGENT}, timeout = TIMEOUT)
 
         return self.extract_price(response), url
 
     def push_prices(self, timestamp: datetime, check_targets: bool = True):
-        if self.cookies is None:
+        if self.cookies is None and self.requires_cookies:
             self._refresh_cookies()
 
         for product in self.tracker.products:
@@ -111,3 +113,6 @@ class Parser(ABC):
     @abstractmethod
     def is_target_parser_of(self, product: str):
         pass
+
+    def make_request_url(self, url: str):
+        return url

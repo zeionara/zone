@@ -27,8 +27,10 @@ class OzonParser(Parser):
 
         return float(PRICE_REGEXP.search(response.text).group(1).replace(' ', ''))
 
-    def is_target_parser_of(self, product: str):
+    def is_target_parser_of(self, product: str, suppress_errors = False):
         if product.startswith('http'):
             return 'ozon.ru' in product
 
+        if suppress_errors:
+            return False
         raise ValueError(f'Target platform of product {product} cannot be established')
