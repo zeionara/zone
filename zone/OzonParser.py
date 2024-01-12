@@ -7,7 +7,10 @@ from .exception import CookieTimeoutException
 
 
 ROOT = 'https://www.ozon.ru'
-PRICE_REGEXP = re.compile(r'([0-9., ]+)\s₽')
+# PRICE_BLOCK_REGEXP = re.compile(r'border-radius:8px.+[0-9., ]+\s₽')
+# PRICE_BLOCK_REGEXP = re.compile(r'webSale.+border-radius:8px.+[0-9., ]+\s₽')
+# PRICE_BLOCK_REGEXP = re.compile(r'c Ozon Картой.+>+[0-9., ]+\s₽')
+PRICE_REGEXP = re.compile(r'([0-9., ]+)\s₽.+c Ozon Картой')
 
 
 class OzonParser(Parser):
@@ -24,6 +27,18 @@ class OzonParser(Parser):
             raise CookieTimeoutException('Cookies timed out')
         if (code := response.status_code) != 200:
             raise ValueError(f'Unknown error. Status code: {code}')
+
+        # price_block = PRICE_BLOCK_REGEXP.search(response.text).string
+
+        # with open('response.html', 'w') as file:
+        #     file.write(response.text)
+
+        # for match in PRICE_BLOCK_REGEXP.findall(response.text):
+        #     print(match)
+
+        # dd
+
+        # print(price_block)
 
         return float(PRICE_REGEXP.search(response.text).group(1).replace(' ', ''))
 
