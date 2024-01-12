@@ -7,6 +7,7 @@ from .Parser import Parser
 
 ROOT = 'https://www.wildberries.ru'
 PRICE_REGEXP = re.compile(r'final_price">\s*([0-9., ]+)\s₽')
+PRODUCT_REGEXP = re.compile(r'catalog/([0-9]+)')
 
 
 class WildberriesParser(Parser):
@@ -20,7 +21,8 @@ class WildberriesParser(Parser):
         super().__init__(*args, **kwargs)
 
     def make_request_url(self, url: str):
-        return self.card_url.format(product = url[::-1].split('/', maxsplit = 2)[1][::-1])
+        # return self.card_url.format(product = url[::-1].split('/', maxsplit = 2)[1][::-1])
+        return self.card_url.format(product = PRODUCT_REGEXP.search(url).group(1))
 
     def extract_price(self, response: Response):
         # print(response.status_code)
