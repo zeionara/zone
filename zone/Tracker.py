@@ -104,9 +104,11 @@ class UserTracker:
 
         if os.path.isfile(self.products_path):
             with open(self.products_path, 'r', encoding = 'utf-8') as file:
-                self.products = [product[:-1] for product in file.readlines() if len(product) > 0]
+                products = [product[:-1] for product in file.readlines() if len(product) > 0]
         else:
-            self.products = []
+            products = []
+
+        self.products = products
 
         # Read prices
 
@@ -118,7 +120,7 @@ class UserTracker:
                 if product not in prices:
                     prices[product] = {}
         else:
-            self.prices = {product: {} for product in self.products}
+            prices = {product: {} for product in self.products}
 
         self.prices = prices
 

@@ -1,3 +1,5 @@
+import os
+
 from time import sleep
 from click import group, argument, option
 from datetime import datetime
@@ -63,6 +65,9 @@ def _start_parsers(tracker: Tracker, delay: float, wildberries: bool = False):
 @option('--delay', '-d', type = float, help = 'interval between consequitive price checks in seconds', default = 3600)
 @option('--wildberries', '-w', is_flag = True, help = 'disable all parsers except wildberries')
 def start(path: str, delay: float, wildberries: bool):
+    if not os.path.isdir(path):
+        os.makedirs(path)
+
     tracker = Tracker(path)
 
     parsing_thread = Thread(target = _start_parsers, args = (tracker, delay, wildberries))

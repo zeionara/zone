@@ -50,7 +50,7 @@ class TelegramBot:
         password = update.message.text.strip()
 
         if password == self.password:
-            self.tracker.spawn(user)
+            self.tracker.spawn(user.id)
             await user.send_message(f'Success! started tracking products for user {user.id}')
 
         return ConversationHandler.END
