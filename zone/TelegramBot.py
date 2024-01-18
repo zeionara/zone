@@ -6,8 +6,11 @@ from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, Mess
 from .Parser import CHAT_ENV, BOT_TOKEN_ENV
 from .Tracker import Tracker
 
+BOT_PASSWORD_ENV = 'ZONE_BOT_PASSWORD'
 
 PRODUCT = 'product'
+PASSWORD = 'password'
+
 NEWLINE = '\n'
 
 
@@ -16,28 +19,54 @@ class TelegramBot:
         self.tracker = tracker
 
         self.token = token = env.get(BOT_TOKEN_ENV)
-        self.chat = chat = env.get(CHAT_ENV)
+        # self.chat = chat = env.get(CHAT_ENV)
+        self.password = password = env.get(BOT_PASSWORD_ENV)
 
         if token is None:
             raise ValueError(f'Environment variable {BOT_TOKEN_ENV} must be set')
 
-        if chat is None:
-            raise ValueError(f'Environment variable {CHAT_ENV} must be set')
+        # if chat is None:
+        #     raise ValueError(f'Environment variable {CHAT_ENV} must be set')
 
-        self.chat = int(chat)
+        if password is None:
+            raise ValueError(f'Environment variable {BOT_PASSWORD_ENV} must be set')
+
+        # self.chat = int(chat)
+
+    async def _start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user = update.effective_user
+
+        if user.id in self.tracker:
+            await user.send_message('Already tracking product for the user')
+            return
+
+        await user.send_message('Do you know the password?')
+
+        return PASSWORD
+
+    async def _start_password(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user = update.effective_user
+
+        password = update.message.text.strip()
+
+        if password == self.password:
+            self.tracker.spawn(user)
+            await user.send_message(f'Success! started tracking products for user {user.id}')
+
+        return ConversationHandler.END
 
     async def _list(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
 
-        if user.id != self.chat:
+        if user.id not in self.tracker:
             return
 
-        await user.send_message(f'Currently tracked products:{NEWLINE}{NEWLINE}{NEWLINE.join(self.tracker.products)}')
+        await user.send_message(f'Currently tracked products:{NEWLINE}{NEWLINE}{NEWLINE.join(self.tracker[user.id].products)}')
 
     async def _track(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
 
-        if user.id != self.chat:
+        if user.id not in self.tracker:
             return
 
         await user.send_message('Please, send link to the product which should be tracked')
@@ -47,13 +76,13 @@ class TelegramBot:
     async def _track_product(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
 
-        if user.id != self.chat:
-            return
+        # if user.id != self.chat:
+        #     return
 
         product = update.message.text.strip()
 
         try:
-            self.tracker.track(product)
+            self.tracker.track(user.id, product)
             await user.send_message(f'Started tracking product {product}')
         except ValueError:
             await user.send_message(f'Already tracking product {product}')
@@ -63,7 +92,7 @@ class TelegramBot:
     async def _ignore(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
 
-        if user.id != self.chat:
+        if user.id not in self.tracker:
             return
 
         await user.send_message('Please, send link to the product which should be ignored')
@@ -73,13 +102,13 @@ class TelegramBot:
     async def _ignore_product(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
 
-        if user.id != self.chat:
-            return
+        # if user.id != self.chat:
+        #     return
 
         product = update.message.text.strip()
 
         try:
-            self.tracker.ignore(product)
+            self.tracker.ignore(user.id, product)
             await user.send_message(f'Stopped tracking product {product}')
         except ValueError:
             await user.send_message(f'Not tracking product {product}')
@@ -89,7 +118,7 @@ class TelegramBot:
     async def _cancel(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
 
-        if user.id != self.chat:
+        if user.id not in self.tracker:
             return
 
         await user.send_message('Cancelled the last operation')
@@ -114,6 +143,15 @@ class TelegramBot:
                 entry_points = [CommandHandler('ignore', self._ignore)],
                 states = {
                     PRODUCT: [MessageHandler(filters.Regex('http.+'), self._ignore_product)]
+                },
+                fallbacks = [CommandHandler('cancel', self._cancel)]
+            )
+        )
+        app.add_handler(
+            ConversationHandler(
+                entry_points = [CommandHandler('start', self._start)],
+                states = {
+                    PASSWORD: [MessageHandler(filters.ALL, self._start_password)]
                 },
                 fallbacks = [CommandHandler('cancel', self._cancel)]
             )

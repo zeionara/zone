@@ -6,7 +6,7 @@ import asyncio
 
 from .OzonParser import OzonParser
 from .WildberriesParser import WildberriesParser
-from .Tracker import Tracker
+from .Tracker import Tracker, UserTracker
 from .TelegramBot import TelegramBot
 
 
@@ -23,7 +23,7 @@ def main():
 @main.command()
 @argument('product', type = str)
 def parse(product: str):
-    tracker = Tracker(products = [product])
+    tracker = UserTracker(products = [product])
 
     ozon_parser = OzonParser(tracker = tracker)
     wildberries_parser = WildberriesParser(tracker = tracker)
@@ -36,7 +36,7 @@ def parse(product: str):
     print(f'The product costs {tuple(tracker.prices[product].values())[-1]}')
 
 
-def _start_bot(tracker: Tracker, delay: float):
+def _start_parsers(tracker: Tracker, delay: float):
     ozon_parser = OzonParser(tracker = tracker)
     wildberries_parser = WildberriesParser(tracker = tracker)
 
@@ -57,13 +57,13 @@ def _start_bot(tracker: Tracker, delay: float):
 
 
 @main.command()
-@argument('path', type = str, default = 'assets/products.txt')
+@argument('path', type = str, default = 'assets')
 @option('--delay', '-d', type = float, help = 'interval between consequitive price checks in seconds', default = 3600)
 def start(path: str, delay: float):
     tracker = Tracker(path)
 
-    bot_thread = Thread(target = _start_bot, args = (tracker, delay))
-    bot_thread.start()
+    parsing_thread = Thread(target = _start_parsers, args = (tracker, delay))
+    parsing_thread.start()
 
     TelegramBot(tracker).poll()
 

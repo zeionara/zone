@@ -5,6 +5,66 @@ from pandas import DataFrame, read_csv
 
 
 class Tracker:
+    group = True
+
+    def __init__(self, path: str):
+        trackers = {}
+
+        for file in os.listdir(path):
+            if file.endswith('.txt'):
+                user = int(file.split('.')[0])
+
+                trackers[user] = UserTracker(path = os.path.join(path, file))
+
+        self.path = path
+        self.trackers = trackers
+
+    def ignore(self, user: int, product: str):
+        tracker = self.trackers.get(user)
+
+        if tracker is None:
+            raise ValueError(f'Unknown user: {user}')
+
+        tracker.ignore(product)
+
+    def track(self, user: int, product: str):
+        tracker = self.trackers.get(user)
+
+        if tracker is None:
+            raise ValueError(f'Unknown user: {user}')
+
+        tracker.track(product)
+
+    def push(self, product: str, price: float, timestamp: datetime):
+        for tracker in self.trackers.values():
+            if product in tracker.products:
+                tracker.push(product, price, timestamp)
+
+    def spawn(self, user: int):
+        if user in self.trackers:
+            raise ValueError(f'Cannot overwrite tracker for user {user}')
+
+        self.trackers[user] = UserTracker(path = os.path.join(self.path, f'{user}.txt'))
+
+    def save(self):
+        for tracker in self.trackers.values():
+            tracker.save()
+
+    @property
+    def products(self):
+        products = {product for tracker in self.trackers.values() for product in tracker.products}
+        return tuple(products)
+
+    def __contains__(self, user: int):
+        return user in self.trackers
+
+    def __getitem__(self, user: int):
+        return self.trackers.get(user)
+
+
+class UserTracker:
+    group = False
+
     def __init__(self, path: str = None, products: list[str] = None):
         if products is None:
             self.products_path = path
@@ -42,8 +102,11 @@ class Tracker:
 
         # Read products
 
-        with open(self.products_path, 'r', encoding = 'utf-8') as file:
-            self.products = [product[:-1] for product in file.readlines() if len(product) > 0]
+        if os.path.isfile(self.products_path):
+            with open(self.products_path, 'r', encoding = 'utf-8') as file:
+                self.products = [product[:-1] for product in file.readlines() if len(product) > 0]
+        else:
+            self.products = []
 
         # Read prices
 
@@ -71,7 +134,7 @@ class Tracker:
                 products = f'{products}\n{product}'
 
         with open(self.products_path, 'w', encoding = 'utf-8') as file:
-            file.write(f'{products}\n')
+            file.write(f'{"" if products is None else products}\n')
 
         # Save prices
 
