@@ -36,14 +36,16 @@ def parse(product: str):
     print(f'The product costs {tuple(tracker.prices[product].values())[-1]}')
 
 
-def _start_parsers(tracker: Tracker, delay: float):
-    ozon_parser = OzonParser(tracker = tracker)
+def _start_parsers(tracker: Tracker, delay: float, wildberries: bool = False):
+    ozon_parser = None if wildberries else OzonParser(tracker = tracker)
     wildberries_parser = WildberriesParser(tracker = tracker)
 
     while True:
         timestamp = datetime.now()
 
-        ozon_parser.push_prices(timestamp)
+        if ozon_parser is not None:
+            ozon_parser.push_prices(timestamp)
+
         wildberries_parser.push_prices(timestamp)
 
         tracker.save()
@@ -59,10 +61,11 @@ def _start_parsers(tracker: Tracker, delay: float):
 @main.command()
 @argument('path', type = str, default = 'assets')
 @option('--delay', '-d', type = float, help = 'interval between consequitive price checks in seconds', default = 3600)
-def start(path: str, delay: float):
+@option('--wildberries', '-w', is_flag = True, help = 'disable all parsers except wildberries')
+def start(path: str, delay: float, wildberries: bool):
     tracker = Tracker(path)
 
-    parsing_thread = Thread(target = _start_parsers, args = (tracker, delay))
+    parsing_thread = Thread(target = _start_parsers, args = (tracker, delay, wildberries))
     parsing_thread.start()
 
     TelegramBot(tracker).poll()
